@@ -1,10 +1,18 @@
+import argparse
+import signal
 import tkinter as tk
 import threading
 from python_banyan.banyan_base import BanyanBase
 
-class EchoClient(BanyanBase):
-    def __init__(self):
-        super(EchoClient, self).__init__(process_name='Client')
+
+class EchoCmdClient(BanyanBase):
+    def __init__(self, **kwargs):
+        super(EchoCmdClient, self).__init__(back_plane_ip_address=kwargs['back_plane_ip_address'],
+                                            subscriber_port=kwargs['subscriber_port'],
+                                            publisher_port=kwargs['publisher_port'],
+                                            process_name=kwargs['process_name'],
+                                            loop_time=kwargs['loop_time'])
+
         self.set_subscriber_topic('reply')
         self.client_name = ''
         
@@ -191,13 +199,43 @@ class EchoClient(BanyanBase):
             winning_bid = winner_data['winning_bid']
             self.client_listbox_highest.insert(tk.END, f"WINNER!!! {winner_name} : {[item_name]}, Winning Bid: Php{winning_bid}")
             self.publish_payload({'winner':winner_data, 'item_name':item_name, 'winner_name':winner_name, 'winning_bid':winning_bid}, 'echo')
-            
-        # if 'show_winner' in payload and payload['show_winner']:
-        #     self.display_winner_window(self.client_listbox_highest)
 
-def echo_client():
-    EchoClient()
+def echo_cmdline_client():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", dest="back_plane_ip_address", default="None",
+                        help="None or IP address used by Back Plane")
+    parser.add_argument("-m", dest="number_of_messages", default="10",
+                        help="Number of messages to publish")
+    parser.add_argument("-n", dest="process_name", default="EchoCmdClient",
+                        help="Set process name in banner")
+    parser.add_argument("-p", dest="publisher_port", default='43124',
+                        help="Publisher IP port")
+    parser.add_argument("-s", dest="subscriber_port", default='43125',
+                        help="Subscriber IP port")
+    parser.add_argument("-t", dest="loop_time", default=".1",
+                        help="Event Loop Timer in seconds")
+
+    args = parser.parse_args()
+
+    if args.back_plane_ip_address == 'None':
+        args.back_plane_ip_address = None
+    kw_options = {'back_plane_ip_address': args.back_plane_ip_address,
+                  'number_of_messages': int(args.number_of_messages),
+                  'publisher_port': args.publisher_port,
+                  'subscriber_port': args.subscriber_port,
+                  'process_name': args.process_name,
+                  'loop_time': float(args.loop_time)}
+
+    EchoCmdClient(**kw_options)
+    
+def signal_handler(sig, frame):
+    print('Exiting Through Signal Handler')
+    raise KeyboardInterrupt
+
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 
 if __name__ == '__main__':
-    echo_client()
+    echo_cmdline_client()
