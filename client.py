@@ -53,7 +53,7 @@ class EchoClient(BanyanBase):
         self.client_button_sell.grid(row=0, column=1, padx=5, pady=2)
 
         self.client_label_time = tk.Label(self.client, text="Time Left:")
-        self.client_label_time.grid(row=0, column=2, padx=2, pady=2)
+        self.client_label_time.grid(row=0, column=2, padx=1, pady=2)
 
         self.client_text_time = tk.Text(self.client, width=15, height=1, state=tk.DISABLED)
         self.client_text_time.grid(row=0, column=3, padx=2, pady=2)
@@ -71,20 +71,22 @@ class EchoClient(BanyanBase):
 
         self.client_listbox_selling = tk.Listbox(self.client, width=40, height=10)
         self.client_listbox_selling.grid(row=4, columnspan=4, padx=5, pady=5)
-
+    
     def setup_highest_bidder_section(self):
         self.client_label_highest = tk.Label(self.client, text="HIGHEST BIDDER:")
         self.client_label_highest.grid(row=5, columnspan=4, pady=2)
 
+        self.client_button_show_winner = tk.Button(self.client, text="Winner", command=self.display_winner_window, width=8)
+        self.client_button_show_winner.grid(row=7, column=0, padx=5, pady=5)
+
         self.client_listbox_highest = tk.Listbox(self.client, width=40, height=10)
         self.client_listbox_highest.grid(row=6, columnspan=4, padx=5, pady=5)
-
-
-
+        
+        
     def bid_window(self):
         self.bid = tk.Tk()
         self.bid.title("BIDDING...")
-        self.bid.resizable(False, False)
+        self.bid.resizable(True, True)
 
         self.bidder_name = self.client_name
         index = self.client_listbox_bidding.curselection()[0]
@@ -114,7 +116,7 @@ class EchoClient(BanyanBase):
     def sell_window(self):
         self.sell = tk.Tk()
         self.sell.title("SELLING AN ITEM...")
-        self.sell.resizable(False, False)
+        self.sell.resizable(True, True)
 
         self.seller_name = self.client_name
         self.sell_item_name = ''
@@ -147,7 +149,11 @@ class EchoClient(BanyanBase):
         self.sell_button_accept.grid(row=0, column=4, padx=10, pady=10)
 
         self.sell.mainloop()
-        
+
+    def display_winner_window(self):
+        self.winner = tk.Tk()
+        self.winner.title("WINNER")
+        self.publish_payload({'show_winner': True}, 'echo')
     
     def incoming_message_processing(self, topic, payload):
         if 'time' in payload:
@@ -161,7 +167,7 @@ class EchoClient(BanyanBase):
                 self.client_button_bid.configure(state=tk.DISABLED)
                 self.client_button_sell.configure(state=tk.DISABLED)
 
-        if all(key in payload for key in ['sell_item_name', 'sell_item_price', 'seller_name']):
+        if 'sell_item_name' in payload and 'sell_item_price' in payload and  'seller_name' in payload:
             if payload['seller_name'] == self.client_name:
                 pass
             else:
@@ -171,7 +177,23 @@ class EchoClient(BanyanBase):
                 self.data_list.append({'item_name': item_name, 'item_price': item_price, 'seller_name': seller_name})
                 
                 self.client_listbox_bidding.insert(tk.END, f"{item_name}, Php{item_price} [{seller_name}]")
-
+        
+        if 'bid_item_name' in payload and 'bid_item_price' in payload and 'bidder_name' in payload:
+            item_name = payload['bid_item_name']
+            bid_item_price = payload['bid_item_price']
+            bidder_name = payload['bidder_name']
+            self.client_listbox_highest.insert(tk.END, f"BIDDING: {item_name} ==> {bid_item_price} ==> [{bidder_name}]")
+            
+        if 'winner' in payload: 
+            winner_data = payload['winner']
+            item_name = winner_data['item_name']
+            winner_name = winner_data['winner_name']
+            winning_bid = winner_data['winning_bid']
+            self.client_listbox_highest.insert(tk.END, f"{winner_name} : {[item_name]}, Winning Bid: Php{winning_bid}")
+            self.publish_payload({'winner':winner_data, 'item_name':item_name, 'winner_name':winner_name, 'winning_bid':winning_bid}, 'echo')
+            
+        if 'show_winner' in payload and payload['show_winner']:
+            self.display_winner_window(self.client_listbox_highest)
 
 def echo_client():
     EchoClient()
