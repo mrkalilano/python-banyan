@@ -72,6 +72,7 @@ class EchoServer(BanyanBase):
                         self.publish_payload({'winner': data['winner']}, 'reply')
 
                 break
+            
             t.sleep(1)
             self.time -= 1
 

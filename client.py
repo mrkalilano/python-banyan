@@ -189,11 +189,11 @@ class EchoClient(BanyanBase):
             item_name = winner_data['item_name']
             winner_name = winner_data['winner_name']
             winning_bid = winner_data['winning_bid']
-            self.client_listbox_highest.insert(tk.END, f"{winner_name} : {[item_name]}, Winning Bid: Php{winning_bid}")
+            self.client_listbox_highest.insert(tk.END, f"WINNER!!! {winner_name} : {[item_name]}, Winning Bid: Php{winning_bid}")
             self.publish_payload({'winner':winner_data, 'item_name':item_name, 'winner_name':winner_name, 'winning_bid':winning_bid}, 'echo')
             
-        if 'show_winner' in payload and payload['show_winner']:
-            self.display_winner_window(self.client_listbox_highest)
+        # if 'show_winner' in payload and payload['show_winner']:
+        #     self.display_winner_window(self.client_listbox_highest)
 
 def echo_client():
     EchoClient()
